@@ -9,7 +9,7 @@ public class UrlConstant {
         public static final String LOGOUT = PRE_FIX + "/logout";
         public static final String FORGOT_PASSWORD = PRE_FIX + "/forgot-password";
         public static final String RESET_PASSWORD = PRE_FIX + "/reset-password";
-        public static final String PASSWORD = PRE_FIX + "/password";
+        public static final String PASSWORD = PRE_FIX + "/change-password";
         public static final String USERS_ME = PRE_FIX + "/users/me";
 
         private AUTH(){}

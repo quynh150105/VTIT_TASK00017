@@ -1,8 +1,6 @@
 package quynh.vtit.task00017.domain.mapper;
 
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import org.mapstruct.*;
 import quynh.vtit.task00017.domain.dto.request.RegisterRequest;
 import quynh.vtit.task00017.domain.dto.request.UpdateProfileRequest;
 import quynh.vtit.task00017.domain.dto.response.RegisterResponse;
@@ -30,6 +28,7 @@ public interface UserMapper {
 
     RegisterResponse toRegisterResponse(User user);
 
+    @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "username", ignore = true)
     @Mapping(target = "email", ignore = true)

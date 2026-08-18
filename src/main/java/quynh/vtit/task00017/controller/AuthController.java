@@ -17,40 +17,41 @@ import quynh.vtit.task00017.domain.dto.request.ResetPasswordRequest;
 import quynh.vtit.task00017.domain.dto.response.LoginResponse;
 import quynh.vtit.task00017.domain.dto.response.PasswordResetTokenResponse;
 import quynh.vtit.task00017.domain.dto.response.RegisterResponse;
+import quynh.vtit.task00017.service.AuthService;
 import quynh.vtit.task00017.service.impl.AuthServiceImpl;
 
 @RestApiV1
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthServiceImpl authServiceImpl;
+    private final AuthService authService;
 
     @PostMapping(UrlConstant.AUTH.REGISTER)
     public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok("Register successfully", authServiceImpl.register(request)));
+        return ResponseEntity.ok(ApiResponse.ok("Register successfully", authService.register(request)));
     }
 
     @PostMapping(UrlConstant.AUTH.LOGIN)
     public ResponseEntity<ApiResponse<LoginResponse>> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok("Login successfully", authServiceImpl.login(request)));
+        return ResponseEntity.ok(ApiResponse.ok("Login successfully", authService.login(request)));
     }
 
     @PostMapping(UrlConstant.AUTH.LOGOUT)
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal Jwt jwt) {
-        authServiceImpl.logout(jwt);
+        authService.logout(jwt);
         return ResponseEntity.ok(ApiResponse.ok("Logout successfully", null));
     }
-//
-//    @PostMapping(UrlConstant.AUTH.FORGOT_PASSWORD)
-//    public ResponseEntity<ApiResponse<PasswordResetTokenResponse>> forgotPassword(
-//            @Valid @RequestBody ForgotPasswordRequest request
-//    ) {
-//        return ResponseEntity.ok(ApiResponse.ok("Password reset token created", authServiceImpl.forgotPassword(request)));
-//    }
-//
-//    @PostMapping(UrlConstant.AUTH.RESET_PASSWORD)
-//    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
-//        authServiceImpl.resetPassword(request);
-//        return ResponseEntity.ok(ApiResponse.ok("Password reset successfully", null));
-//    }
+
+    @PostMapping(UrlConstant.AUTH.FORGOT_PASSWORD)
+    public ResponseEntity<ApiResponse<PasswordResetTokenResponse>> forgotPassword(
+            @Valid @RequestBody ForgotPasswordRequest request
+    ) {
+        return ResponseEntity.ok(ApiResponse.ok("Password reset otp created", authService.forgotPassword(request)));
+    }
+
+    @PostMapping(UrlConstant.AUTH.RESET_PASSWORD)
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok(ApiResponse.ok("Password reset successfully", null));
+    }
 }

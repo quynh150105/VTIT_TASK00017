@@ -2,6 +2,8 @@ package quynh.vtit.task00017.service.impl;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Random;
+import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -15,17 +17,20 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import quynh.vtit.task00017.base.constant.ErrorMessage;
+import quynh.vtit.task00017.base.enums.ResetTokenChannel;
 import quynh.vtit.task00017.base.enums.UserRole;
 import quynh.vtit.task00017.base.enums.UserStatus;
-import quynh.vtit.task00017.domain.dto.request.LoginRequest;
-import quynh.vtit.task00017.domain.dto.request.RegisterRequest;
+import quynh.vtit.task00017.domain.dto.request.*;
 import quynh.vtit.task00017.domain.dto.response.LoginResponse;
+import quynh.vtit.task00017.domain.dto.response.PasswordResetTokenResponse;
 import quynh.vtit.task00017.domain.dto.response.RegisterResponse;
 import quynh.vtit.task00017.domain.entity.BlacklistedToken;
+import quynh.vtit.task00017.domain.entity.PasswordResetToken;
 import quynh.vtit.task00017.domain.entity.User;
 import quynh.vtit.task00017.domain.mapper.UserMapper;
 import quynh.vtit.task00017.exception.BusinessException;
 import quynh.vtit.task00017.repository.BlacklistedTokenRepository;
+import quynh.vtit.task00017.repository.PasswordResetTokenRepository;
 import quynh.vtit.task00017.repository.UserRepository;
 import quynh.vtit.task00017.service.AuthService;
 import quynh.vtit.task00017.config.JwtTokenHash;
@@ -39,6 +44,8 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final JwtEncoder jwtEncoder;
     private final BlacklistedTokenRepository blacklistedTokenRepository;
+    private final SendMailService sendMailService;
+    private final PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Transactional
     @Override
@@ -82,60 +89,40 @@ public class AuthServiceImpl implements AuthService {
         blacklistedTokenRepository.save(token);
     }
 
+    @Override
+    public PasswordResetTokenResponse forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.User.ERR_USER_NOT_EXISTED));
+        int otpNumber = new Random().nextInt(900000) + 100000; // Generates a 6-digit number
+        String otp = String.valueOf(otpNumber);
+        PasswordResetToken passwordResetToken = PasswordResetToken.builder()
+                .user(user)
+                .channel(ResetTokenChannel.EMAIL)
+                .destination(user.getEmail())
+                .optHash(passwordEncoder.encode(otp))
+                .expiresAt(LocalDateTime.now().plusMinutes(5))
+                .build();
+        sendMailService.sendEmail(user.getEmail(),"OTP",otp);
+        passwordResetTokenRepository.save(passwordResetToken);
+        return new PasswordResetTokenResponse(otp);
+    }
 
-//    @Transactional
-//    public UserResponse updateProfile(UpdateProfileRequest request) {
-//        User user = currentUserService.getCurrentUser();
-//        if (request.phone() != null
-//                && !request.phone().equals(user.getPhone())
-//                && userRepository.existsByPhoneAndIdNot(request.phone(), user.getId())) {
-//            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.User.ERR_PHONE_EXISTS);
-//        }
-//        userMapper.updateProfile(request, user);
-//        return userMapper.toResponse(user);
-//    }
+    @Override
+    @Transactional
+    public void resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.User.ERR_USER_NOT_EXISTED));
+        PasswordResetToken resetToken = passwordResetTokenRepository
+                .findByUserAndUsedAtIsNullAndExpiresAtAfter(user, LocalDateTime.now())
+                .stream()
+                .filter(token -> passwordEncoder.matches(request.otp(), token.getOptHash()))
+                .findFirst()
+                .orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Auth.ERR_INVALID_OTP));
 
-//    @Transactional
-//    public void changePassword(ChangePasswordRequest request) {
-//        User user = currentUserService.getCurrentUser();
-//        if (!passwordEncoder.matches(request.currentPassword(), user.getPasswordHash())) {
-//            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.CURRENT_PASSWORD_INCORRECT);
-//        }
-//        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-//    }
-
-//    @Transactional
-//    public PasswordResetTokenResponse forgotPassword(ForgotPasswordRequest request) {
-//        User user = userRepository.findByEmail(request.email())
-//                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.EMAIL_NOT_FOUND));
-//        String token = UUID.randomUUID().toString();
-//
-//        PasswordResetToken resetToken = new PasswordResetToken();
-//        resetToken.setUser(user);
-//        resetToken.setChannel(ResetTokenChannel.EMAIL);
-//        resetToken.setDestination(user.getEmail());
-//        resetToken.setTokenHash(passwordEncoder.encode(token));
-//        resetToken.setExpiresAt(LocalDateTime.now().plusMinutes(15));
-//        passwordResetTokenRepository.save(resetToken);
-//
-//        return new PasswordResetTokenResponse(token);
-////    }
-//
-//    @Transactional
-//    public void resetPassword(ResetPasswordRequest request) {
-//        User user = userRepository.findByEmail(request.email())
-//                .orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.INVALID_RESET_TOKEN));
-//        PasswordResetToken resetToken = passwordResetTokenRepository
-//                .findByUserAndUsedAtIsNullAndExpiresAtAfter(user, LocalDateTime.now())
-//                .stream()
-//                .filter(token -> passwordEncoder.matches(request.token(), token.getTokenHash()))
-//                .findFirst()
-//                .orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.INVALID_RESET_TOKEN));
-//
-//        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
-//        resetToken.setUsedAt(LocalDateTime.now());
-//    }
-
+        user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
+        userRepository.save(user);
+        resetToken.setUsedAt(LocalDateTime.now());
+    }
 
     private String generateToken(User user) {
         Instant now = Instant.now();

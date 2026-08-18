@@ -13,6 +13,7 @@ import quynh.vtit.task00017.base.constant.UrlConstant;
 import quynh.vtit.task00017.domain.dto.request.ChangePasswordRequest;
 import quynh.vtit.task00017.domain.dto.request.UpdateProfileRequest;
 import quynh.vtit.task00017.domain.dto.response.UserResponse;
+import quynh.vtit.task00017.service.AuthService;
 import quynh.vtit.task00017.service.UserService;
 import quynh.vtit.task00017.service.impl.AuthServiceImpl;
 
@@ -21,7 +22,6 @@ import quynh.vtit.task00017.service.impl.AuthServiceImpl;
 public class UserController {
 
     private final UserService userService;
-
 
     @GetMapping(UrlConstant.User.GET_PROFILE)
     public ResponseEntity<ApiResponse<UserResponse>> getProfile() {
@@ -39,10 +39,10 @@ public class UserController {
     ) {
         return ResponseEntity.ok(ApiResponse.ok("Update profile successfully", userService.updateProfile(request)));
     }
-//
-//    @PutMapping(UrlConstant.PASSWORD)
-//    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
-//        authServiceImpl.changePassword(request);
-//        return ResponseEntity.ok(ApiResponse.ok("Change password successfully", null));
-//    }
+
+    @PutMapping(UrlConstant.User.CHANGE_PASSWORD)
+    public ResponseEntity<ApiResponse<Void>> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        userService.changePassword(request);
+        return ResponseEntity.ok(ApiResponse.ok("Change password successfully", null));
+    }
 }
