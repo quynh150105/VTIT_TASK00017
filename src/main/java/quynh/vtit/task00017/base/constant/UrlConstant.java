@@ -24,4 +24,14 @@ public class UrlConstant {
         private User() {
         }
     }
+
+    public static class Category {
+        public static final String PRE_FIX = "/categories";
+        public static final String Get_All = PRE_FIX + "/all";
+        public static final String CREATE = PRE_FIX + "/creation";
+        public static final String UPDATE = PRE_FIX + "/{id}";
+        public static final String DELETE = PRE_FIX + "/{id}";
+        private Category() {
+        }
+    }
 }

@@ -41,4 +41,10 @@ public class ErrorMessage {
     public static class Admin {
         public static final String ERR_NOT_ADMIN = "exception.admin.not.admin";
     }
+
+    public static class Category {
+        public static final String ERR_CATEGORY_NOT_FOUND = "exception.category.not.found";
+        public static final String ERR_CATEGORY_EXISTS = "exception.category.exists";
+        public static final String ERR_CATEGORY_IS_SYSTEM = "exception.category.issystem";
+    }
 }
