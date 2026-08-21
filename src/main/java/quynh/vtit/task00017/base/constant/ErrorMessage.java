@@ -47,4 +47,9 @@ public class ErrorMessage {
         public static final String ERR_CATEGORY_EXISTS = "exception.category.exists";
         public static final String ERR_CATEGORY_IS_SYSTEM = "exception.category.issystem";
     }
+
+    public static class Wallet {
+        public static final String ERR_WALLET_NOT_FOUND = "exception.wallet.not.found";
+        public static final String ERR_WALLET_EXISTS = "exception.wallet.exists";
+    }
 }
