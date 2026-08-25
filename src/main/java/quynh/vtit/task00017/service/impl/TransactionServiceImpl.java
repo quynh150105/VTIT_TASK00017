@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import quynh.vtit.task00017.base.constant.ErrorMessage;
 import quynh.vtit.task00017.base.enums.TransactionStatus;
 import quynh.vtit.task00017.base.enums.TransactionType;
+import quynh.vtit.task00017.base.enums.UserRole;
 import quynh.vtit.task00017.base.enums.WalletStatus;
 import quynh.vtit.task00017.domain.dto.request.CreateTransactionRequest;
 import quynh.vtit.task00017.domain.dto.request.UpdateTransactionRequest;
@@ -47,15 +48,19 @@ public class TransactionServiceImpl implements TransactionService {
             LocalDate fromDate,
             LocalDate toDate
     ) {
+        User user = currentUser();
         return transactionMapper.toSummaryResponses(
-                transactionRepository.findTransactions(currentUser().getId(), walletId, type, status, fromDate, toDate)
+                transactionRepository.findTransactions(readableUserId(user), walletId, type, status, fromDate, toDate)
         );
     }
 
     @Override
     @Transactional(readOnly = true)
     public TransactionResponse getTransaction(Long id) {
-        return transactionMapper.toResponse(findTransaction(id, currentUser().getId()));
+        User user = currentUser();
+        return transactionMapper.toResponse(
+                user.getRole() == UserRole.ADMIN ? findTransaction(id) : findTransaction(id, user.getId())
+        );
     }
 
     @Override
@@ -151,6 +156,15 @@ public class TransactionServiceImpl implements TransactionService {
     private Transaction findTransaction(Long id, Long userId) {
         return transactionRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.Transaction.ERR_TRANSACTION_NOT_FOUND));
+    }
+
+    private Transaction findTransaction(Long id) {
+        return transactionRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.Transaction.ERR_TRANSACTION_NOT_FOUND));
+    }
+
+    private Long readableUserId(User user) {
+        return user.getRole() == UserRole.ADMIN ? null : user.getId();
     }
 
     private Wallet findWallet(Long id, Long userId) {

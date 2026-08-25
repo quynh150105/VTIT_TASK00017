@@ -16,7 +16,11 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     @Query("""
     select t from Transaction t
-        where t.user.id = :userId
+        join fetch t.user
+        join fetch t.wallet
+        join fetch t.category
+        left join fetch t.transferWallet
+        where (:userId is null or t.user.id = :userId)
             and (:walletId is null or t.wallet.id = :walletId or t.transferWallet.id = :walletId)
             and (:type is null or t.transactionType = :type)
             and (:status is null or t.status = :status)

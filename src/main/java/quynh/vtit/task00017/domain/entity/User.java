@@ -11,8 +11,8 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.Setter;
+
+import lombok.*;
 import quynh.vtit.task00017.base.enums.UserRole;
 import quynh.vtit.task00017.base.enums.UserStatus;
 
@@ -20,6 +20,9 @@ import quynh.vtit.task00017.base.enums.UserStatus;
 @Setter
 @Entity
 @Table(name = "users")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class User {
 
     @Id

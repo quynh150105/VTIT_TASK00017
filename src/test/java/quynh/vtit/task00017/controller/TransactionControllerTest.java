@@ -1,18 +1,26 @@
 package quynh.vtit.task00017.controller;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.io.ByteArrayInputStream;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import quynh.vtit.task00017.base.enums.UserRole;
 import quynh.vtit.task00017.domain.dto.request.LoginRequest;
 import quynh.vtit.task00017.domain.dto.request.RegisterRequest;
+import quynh.vtit.task00017.repository.UserRepository;
 import quynh.vtit.task00017.service.impl.AuthServiceImpl;
 
 @SpringBootTest
@@ -24,6 +32,9 @@ class TransactionControllerTest {
 
     @Autowired
     private AuthServiceImpl authService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @Test
     void transactionApisRequireAuthentication() throws Exception {
@@ -86,6 +97,88 @@ class TransactionControllerTest {
                 .andExpect(jsonPath("$.data.walletName").value("Cash"))
                 .andExpect(jsonPath("$.data.categoryName").value("Food"))
                 .andExpect(jsonPath("$.data.createdAt").exists());
+
+        mockMvc.perform(get("/api/v1/export/transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .param("walletId", walletId)
+                        .param("type", "EXPENSE"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void adminCanExportTransactions() throws Exception {
+        String userToken = registerAndLogin("transaction-owner-user", "transaction-owner-user@example.com", UserRole.USER);
+        String walletId = createWallet(userToken);
+        String categoryId = createCategory(userToken);
+        String transactionId = createTransaction(userToken, walletId, categoryId, "Admin visible lunch");
+        String adminToken = registerAndLogin("transaction-admin-user", "transaction-admin-user@example.com", UserRole.ADMIN);
+
+        mockMvc.perform(get("/api/v1/transactions/all").header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].id", hasItem(Integer.parseInt(transactionId))));
+
+        mockMvc.perform(get("/api/v1/transactions/{id}", transactionId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.title").value("Admin visible lunch"));
+
+        byte[] exportBytes = mockMvc.perform(get("/api/v1/export/transactions")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .andExpect(result -> assertThat(result.getResponse().getHeader(HttpHeaders.CONTENT_DISPOSITION))
+                        .matches("attachment; filename=\"transaction-report-\\d{8}-\\d{6}\\.xlsx\""))
+                .andReturn()
+                .getResponse()
+                .getContentAsByteArray();
+
+        assertThat(exportBytes).isNotEmpty();
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(exportBytes))) {
+            assertThat(workbook.getSheetAt(0).getRow(0).getCell(1).getStringCellValue()).isEqualTo("userName");
+            assertThat(workbook.getSheetAt(0).getRow(0).getCell(2).getStringCellValue()).isEqualTo("walletName");
+            assertThat(workbook.getSheetAt(0).getRow(0).getCell(3).getStringCellValue()).isEqualTo("categoryName");
+            assertThat(workbook.getSheetAt(0).getRow(0).getCell(4).getStringCellValue()).isEqualTo("transferWalletName");
+            assertThat(workbook.getSheetAt(0)).anySatisfy(row ->
+                    assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Admin visible lunch")
+            );
+        }
+
+        mockMvc.perform(get("/api/v1/transactions/export")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk());
+    }
+
+    private String registerAndLogin(String username, String email, UserRole role) {
+        authService.register(new RegisterRequest(username, email, null, "secret123", null));
+        userRepository.findByUsername(username).ifPresent(user -> {
+            user.setRole(role);
+            userRepository.save(user);
+        });
+        return authService.login(new LoginRequest(username, "secret123")).accessToken();
+    }
+
+    private String createTransaction(String token, String walletId, String categoryId, String title) throws Exception {
+        String response = mockMvc.perform(post("/api/v1/transactions/creation")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "walletId": %s,
+                                  "categoryId": %s,
+                                  "transactionType": "EXPENSE",
+                                  "amount": 30000,
+                                  "currencyCode": "vnd",
+                                  "transactionDate": "2026-08-21",
+                                  "title": "%s",
+                                  "paymentMethod": "CASH",
+                                  "status": "POSTED"
+                                }
+                                """.formatted(walletId, categoryId, title)))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return com.jayway.jsonpath.JsonPath.read(response, "$.data.id").toString();
     }
 
     private String createWallet(String token) throws Exception {
