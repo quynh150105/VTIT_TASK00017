@@ -52,4 +52,12 @@ public class ErrorMessage {
         public static final String ERR_WALLET_NOT_FOUND = "exception.wallet.not.found";
         public static final String ERR_WALLET_EXISTS = "exception.wallet.exists";
     }
+
+    public static class Transaction {
+        public static final String ERR_TRANSACTION_NOT_FOUND = "exception.transaction.not.found";
+        public static final String ERR_TRANSFER_WALLET_REQUIRED = "exception.transaction.transfer.wallet.required";
+        public static final String ERR_TRANSFER_WALLET_SAME = "exception.transaction.transfer.wallet.same";
+        public static final String ERR_TRANSACTION_CURRENCY_MISMATCH = "exception.transaction.currency.mismatch";
+        public static final String ERR_TRANSFER_CURRENCY_MISMATCH = "exception.transaction.transfer.currency.mismatch";
+    }
 }
