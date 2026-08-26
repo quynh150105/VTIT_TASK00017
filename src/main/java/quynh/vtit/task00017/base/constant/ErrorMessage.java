@@ -60,4 +60,10 @@ public class ErrorMessage {
         public static final String ERR_TRANSACTION_CURRENCY_MISMATCH = "exception.transaction.currency.mismatch";
         public static final String ERR_TRANSFER_CURRENCY_MISMATCH = "exception.transaction.transfer.currency.mismatch";
     }
+
+    public static class Budget{
+        public static final String ERR_INVALID_DATE_RANGE = "exception.budget.invalid.date.range";
+        public static final String ERR_BUDGET_EXISTED = "exception.budget.existed";
+        public static final String ERR_BUDGET_NOT_FOUND = "exception.budget.notfound";
+    }
 }

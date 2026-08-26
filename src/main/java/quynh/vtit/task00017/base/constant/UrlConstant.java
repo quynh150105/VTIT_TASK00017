@@ -3,7 +3,7 @@ package quynh.vtit.task00017.base.constant;
 public class UrlConstant {
 
     public static class AUTH {
-        public static final String PRE_FIX = "/auth";
+        private static final String PRE_FIX = "/auth";
         public static final String REGISTER = PRE_FIX + "/register";
         public static final String LOGIN = PRE_FIX + "/login";
         public static final String LOGOUT = PRE_FIX + "/logout";
@@ -16,7 +16,7 @@ public class UrlConstant {
     }
 
     public static class User {
-        public static final String PRE_FIX = "/user";
+        private static final String PRE_FIX = "/user";
         public static final String GET_PROFILE = PRE_FIX + "/profile";
         public static final String Get_All_PROFILE = PRE_FIX + "/all";
         public static final String UPDATE_PROFILE = PRE_FIX + "/profile";
@@ -26,7 +26,7 @@ public class UrlConstant {
     }
 
     public static class Category {
-        public static final String PRE_FIX = "/categories";
+        private static final String PRE_FIX = "/categories";
         public static final String Get_All = PRE_FIX + "/all";
         public static final String CREATE = PRE_FIX + "/creation";
         public static final String UPDATE = PRE_FIX + "/{id}";
@@ -36,7 +36,7 @@ public class UrlConstant {
     }
 
     public static class Wallet {
-        public static final String PRE_FIX = "/wallets";
+        private static final String PRE_FIX = "/wallets";
         public static final String GET_ALL = PRE_FIX + "/all";
         public static final String CREATE = PRE_FIX + "/creation";
         public static final String UPDATE = PRE_FIX + "/{id}";
@@ -47,7 +47,7 @@ public class UrlConstant {
     }
 
     public static class Transaction {
-        public static final String PRE_FIX = "/transactions";
+        private static final String PRE_FIX = "/transactions";
         public static final String GET_ALL = PRE_FIX + "/all";
         public static final String GET_DETAIL = PRE_FIX + "/{id:\\d+}";
         public static final String CREATE = PRE_FIX + "/creation";
@@ -59,7 +59,7 @@ public class UrlConstant {
         }
     }
     public static class Export {
-        public static final String PRE_FIX = "/export";
+        private static final String PRE_FIX = "/export";
         public static final String TRANSACTION = PRE_FIX + "/transactions";
         public static final String GET_DETAIL = PRE_FIX + "/{id}";
         public static final String CREATE = PRE_FIX + "/creation";
@@ -69,6 +69,16 @@ public class UrlConstant {
 
         private Export() {
         }
+    }
+
+    public static class Budget{
+        private static final String PRE_FIX = "/budgets";
+        public static final String GET_ALL = PRE_FIX + "/all";
+        public static final String CREATE = PRE_FIX + "/creation";
+        public static final String UPDATE = PRE_FIX + "/{id}";
+        public static final String DELETE = PRE_FIX + "/{id}";
+
+        private Budget(){}
     }
 
 }

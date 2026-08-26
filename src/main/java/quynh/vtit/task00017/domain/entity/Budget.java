@@ -16,8 +16,8 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.Setter;
+
+import lombok.*;
 import quynh.vtit.task00017.base.enums.BudgetStatus;
 import quynh.vtit.task00017.base.enums.PeriodType;
 
@@ -25,6 +25,9 @@ import quynh.vtit.task00017.base.enums.PeriodType;
 @Setter
 @Entity
 @Table(name = "budgets")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Budget {
 
     @Id
@@ -60,7 +63,8 @@ public class Budget {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private BudgetStatus status;
+    @Builder.Default
+    private BudgetStatus status = BudgetStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
