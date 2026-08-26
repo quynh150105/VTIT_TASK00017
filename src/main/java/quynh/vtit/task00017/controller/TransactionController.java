@@ -2,13 +2,10 @@ package quynh.vtit.task00017.controller;
 
 import jakarta.validation.Valid;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,7 +23,6 @@ import quynh.vtit.task00017.domain.dto.request.CreateTransactionRequest;
 import quynh.vtit.task00017.domain.dto.request.UpdateTransactionRequest;
 import quynh.vtit.task00017.domain.dto.response.TransactionResponse;
 import quynh.vtit.task00017.domain.dto.response.TransactionSummaryResponse;
-import quynh.vtit.task00017.service.ExportService;
 import quynh.vtit.task00017.service.TransactionService;
 
 @RestApiV1
@@ -36,7 +32,6 @@ public class TransactionController {
     private static final DateTimeFormatter EXPORT_TIMESTAMP_FORMAT = DateTimeFormatter.ofPattern("ddMMyyyy-HHmmss");
 
     private final TransactionService transactionService;
-    private final ExportService exportService;
 
     @GetMapping(UrlConstant.Transaction.GET_ALL)
     public ResponseEntity<ApiResponse<List<TransactionSummaryResponse>>> getTransactions(

@@ -59,6 +59,7 @@ public class ErrorMessage {
         public static final String ERR_TRANSFER_WALLET_SAME = "exception.transaction.transfer.wallet.same";
         public static final String ERR_TRANSACTION_CURRENCY_MISMATCH = "exception.transaction.currency.mismatch";
         public static final String ERR_TRANSFER_CURRENCY_MISMATCH = "exception.transaction.transfer.currency.mismatch";
+        public static final String ERR_INSUFFICIENT_BALANCE = "exception.transaction.insufficient.balance";
     }
 
     public static class Budget{

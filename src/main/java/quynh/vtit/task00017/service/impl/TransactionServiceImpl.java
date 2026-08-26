@@ -150,7 +150,11 @@ public class TransactionServiceImpl implements TransactionService {
     }
 
     private void add(Wallet wallet, BigDecimal amount) {
-        wallet.setCurrentBalance(wallet.getCurrentBalance().add(amount));
+        BigDecimal newBalance = wallet.getCurrentBalance().add(amount);
+        if(newBalance.compareTo(BigDecimal.ZERO) < 0){
+            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Transaction.ERR_INSUFFICIENT_BALANCE);
+        }
+        wallet.setCurrentBalance(newBalance);
     }
 
     private Transaction findTransaction(Long id, Long userId) {
