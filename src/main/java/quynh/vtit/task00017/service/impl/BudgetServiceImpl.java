@@ -17,9 +17,11 @@ import quynh.vtit.task00017.domain.mapper.BudgetMapper;
 import quynh.vtit.task00017.exception.BusinessException;
 import quynh.vtit.task00017.repository.BudgetRepository;
 import quynh.vtit.task00017.repository.CategoryRepository;
+import quynh.vtit.task00017.repository.TransactionRepository;
 import quynh.vtit.task00017.repository.UserRepository;
 import quynh.vtit.task00017.service.BudgetService;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class BudgetServiceImpl implements BudgetService {
     private final BudgetRepository budgetRepository;
     private final CategoryRepository categoryRepository;
     private final BudgetMapper budgetMapper;
+    private final TransactionRepository transactionRepository;
 
 
     @Override
@@ -57,7 +60,7 @@ public class BudgetServiceImpl implements BudgetService {
                 .build();
 
         budgetRepository.save(budget);
-        return budgetMapper.toBudgetResponse(budget);
+        return toResponse(budget);
     }
 
     @Override
@@ -65,7 +68,9 @@ public class BudgetServiceImpl implements BudgetService {
     public List<BudgetResponse> getAllBudgetByUser() {
         User currentUser = currentUser();
         List<Budget> budgetList = budgetRepository.findByUserIdAndStatusNotOrderByCreatedAtDesc(currentUser.getId(), BudgetStatus.ARCHIVED);
-        return budgetMapper.toBudgetResponseList(budgetList);
+        return budgetList.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
     @Override
@@ -84,7 +89,7 @@ public class BudgetServiceImpl implements BudgetService {
         budget.setCategory(category);
         budget.setCurrencyCode(request.currencyCode().trim().toUpperCase());
         budgetRepository.save(budget);
-        return budgetMapper.toBudgetResponse(budget);
+        return toResponse(budget);
     }
 
     @Override
@@ -108,5 +113,37 @@ public class BudgetServiceImpl implements BudgetService {
         if(endDate.isBefore(startDate)){
             throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Budget.ERR_INVALID_DATE_RANGE);
         }
+    }
+
+    private BudgetResponse toResponse(Budget budget){
+        BigDecimal spentAmount = transactionRepository.sumBudgetSpent(
+                budget.getUser().getId(),
+                budget.getCategory().getId(),
+                budget.getStartDate(),
+                budget.getEndDate()
+        );
+        BigDecimal remainingAmount = budget.getLimitAmount().subtract(spentAmount);
+        String alert = null;
+        if(remainingAmount.compareTo(BigDecimal.ONE) < 0){
+            alert = BudgetStatus.OVER_BUDGET.name();
+        }else if(spentAmount.compareTo(budget.getLimitAmount().multiply(new BigDecimal("0.8")))>=0){
+            alert = BudgetStatus.NEAR_LIMIT.name();
+        }
+        return new BudgetResponse(
+                budget.getId(),
+                budget.getUser().getId(),
+                budget.getCategory().getId(),
+                budget.getCategory().getName(),
+                budget.getName(),
+                budget.getLimitAmount(),
+                spentAmount,
+                remainingAmount,
+                budget.getCurrencyCode(),
+                budget.getStartDate(),
+                budget.getEndDate(),
+                budget.getPeriodType(),
+                budget.getStatus(),
+                alert
+        );
     }
 }

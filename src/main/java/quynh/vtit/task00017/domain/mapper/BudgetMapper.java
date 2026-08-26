@@ -15,16 +15,6 @@ import java.util.List;
 public interface BudgetMapper {
 
     @Mappings({
-            @Mapping(target = "userId", source = "user.id"),
-            @Mapping(target = "categoryId", source = "category.id"),
-            @Mapping(target = "categoryName", source= "category.name"),
-            @Mapping(target="status", source = "status")
-    })
-    BudgetResponse toBudgetResponse(Budget budget);
-
-    List<BudgetResponse> toBudgetResponseList(List<Budget> budgets);
-
-    @Mappings({
             @Mapping(target = "id", ignore = true),
             @Mapping(target = "user", ignore = true),
             @Mapping(target = "category", ignore = true),
