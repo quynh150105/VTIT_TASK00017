@@ -13,10 +13,13 @@ public record BudgetResponse(
         String categoryName,
         String name,
         BigDecimal limitAmount,
+        BigDecimal spentAmount,
+        BigDecimal remainingAmount,
         String currencyCode,
         LocalDate startDate,
         LocalDate endDate,
         PeriodType periodType,
-        BudgetStatus status
+        BudgetStatus status,
+        String budgetAlert
 ) {
 }

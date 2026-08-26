@@ -1,5 +1,6 @@
 package quynh.vtit.task00017.repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -38,4 +39,15 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     );
 
     Optional<Transaction> findByIdAndUserId(Long id, Long userId);
+
+    @Query("""
+        Select coalesce(sum(t.amount), 0)
+        from Transaction t
+        where t.user.id = :userId
+            and t.category.id = :categoryId
+                and t.transactionType = quynh.vtit.task00017.base.enums.TransactionType.EXPENSE
+                    and t.status = quynh.vtit.task00017.base.enums.TransactionStatus.POSTED
+                        and t.transactionDate between :startDate and :endDate
+    """)
+    BigDecimal sumBudgetSpent(@Param("userId") Long userId, @Param("categoryId") Long categoryId, @Param("startDate") LocalDate startDate, @Param("endDate") LocalDate endDate);
 }
