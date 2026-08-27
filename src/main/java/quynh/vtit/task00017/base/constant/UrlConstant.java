@@ -81,4 +81,15 @@ public class UrlConstant {
         private Budget(){}
     }
 
+
+    public static class SavingGoal{
+        private static final String PRE_FIX = "/saving-goals";
+        public static final String GET_ALL = PRE_FIX + "/all";
+        public static final String GET_DETAIL = PRE_FIX + "/{id:\\d+}";
+        public static final String CREATE = PRE_FIX + "/creation";
+        public static final String UPDATE = PRE_FIX + "/{id}";
+        public static final String DELETE = PRE_FIX + "/{id}";
+
+        private SavingGoal(){}
+    }
 }

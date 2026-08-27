@@ -16,14 +16,17 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.Setter;
+
+import lombok.*;
 import quynh.vtit.task00017.base.enums.SavingGoalStatus;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "saving_goals")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class SavingGoal {
 
     @Id
@@ -45,7 +48,8 @@ public class SavingGoal {
     private BigDecimal targetAmount;
 
     @Column(name = "current_amount", nullable = false, precision = 19, scale = 2)
-    private BigDecimal currentAmount;
+    @Builder.Default
+    private BigDecimal currentAmount = BigDecimal.ZERO;
 
     @Column(name = "currency_code", nullable = false, length = 3)
     private String currencyCode;
@@ -55,7 +59,8 @@ public class SavingGoal {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private SavingGoalStatus status;
+    @Builder.Default
+    private SavingGoalStatus status = SavingGoalStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

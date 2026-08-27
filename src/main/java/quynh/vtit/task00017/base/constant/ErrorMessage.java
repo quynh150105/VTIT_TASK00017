@@ -67,4 +67,10 @@ public class ErrorMessage {
         public static final String ERR_BUDGET_EXISTED = "exception.budget.existed";
         public static final String ERR_BUDGET_NOT_FOUND = "exception.budget.notfound";
     }
+
+    public static class SavingGoal{
+        public static final String ERR_SAVING_GOAL_NOT_FOUND = "exception.saving-goal.not.found";
+        public static final String ERR_SAVING_GOAL_EXISTS = "exception.saving-goal.exists";
+        public static final String ERR_SAVING_GOAL_CURRENCY_MISMATCH = "exception.saving-goal.currency.mismatch";
+    }
 }
