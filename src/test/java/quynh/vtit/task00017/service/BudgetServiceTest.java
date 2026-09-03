@@ -61,9 +61,11 @@ class BudgetServiceTest {
 
         var wallet = walletService.createWallet(new CreateWalletRequest(
                 "Cash",
-                WalletType.CASH,
+                WalletType.MAIN,
                 "vnd",
-                new BigDecimal("100.00")
+                new BigDecimal("100.00"),
+                null,
+                null
         ));
         var category = categoryService.createCategory(new CreateCategoryRequest(
                 "Food",

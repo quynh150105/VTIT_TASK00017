@@ -51,6 +51,7 @@ public class ErrorMessage {
     public static class Wallet {
         public static final String ERR_WALLET_NOT_FOUND = "exception.wallet.not.found";
         public static final String ERR_WALLET_EXISTS = "exception.wallet.exists";
+        public static final String ERR_WALLET_HAS_BALANCE = "exception.wallet.has.balance";
     }
 
     public static class Transaction {

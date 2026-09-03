@@ -86,7 +86,7 @@ class BudgetControllerTest {
                         .content("""
                                 {
                                   "name": "Cash",
-                                  "walletType": "CASH",
+                                  "walletType": "MAIN",
                                   "currencyCode": "vnd",
                                   "openingBalance": 100
                                 }
