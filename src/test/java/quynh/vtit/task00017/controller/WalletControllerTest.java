@@ -50,15 +50,20 @@ class WalletControllerTest {
                         .content("""
                                 {
                                   "name": "Cash",
-                                  "walletType": "CASH",
+                                  "walletType": "GOAL",
                                   "currencyCode": "vnd",
-                                  "openingBalance": 100000
+                                  "openingBalance": 100000,
+                                  "targetAmount": 200000,
+                                  "targetDate": "2026-12-31"
                                 }
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value("Cash"))
-                .andExpect(jsonPath("$.data.currencyCode").value("VND"));
+                .andExpect(jsonPath("$.data.currencyCode").value("VND"))
+                .andExpect(jsonPath("$.data.walletType").value("GOAL"))
+                .andExpect(jsonPath("$.data.targetAmount").value(200000))
+                .andExpect(jsonPath("$.data.targetDate").value("2026-12-31"));
 
         mockMvc.perform(get("/api/v1/wallets/all").header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk())
@@ -82,7 +87,7 @@ class WalletControllerTest {
                         .content("""
                                 {
                                   "name": "Cash",
-                                  "walletType": "CASH",
+                                  "walletType": "MAIN",
                                   "currencyCode": "vnd",
                                   "openingBalance": 100000
                                 }
@@ -99,9 +104,9 @@ class WalletControllerTest {
                         .content("""
                                 {
                                   "name": "Bank",
-                                  "walletType": "BANK",
+                                  "walletType": "SPENDING",
                                   "currencyCode": "usd",
-                                  "openingBalance": 200
+                                  "openingBalance": 0
                                 }
                                 """))
                 .andExpect(status().isOk())

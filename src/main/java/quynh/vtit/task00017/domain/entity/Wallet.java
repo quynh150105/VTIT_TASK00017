@@ -14,9 +14,10 @@ import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
-import lombok.Getter;
-import lombok.Setter;
+
+import lombok.*;
 import quynh.vtit.task00017.base.enums.WalletStatus;
 import quynh.vtit.task00017.base.enums.WalletType;
 
@@ -24,6 +25,9 @@ import quynh.vtit.task00017.base.enums.WalletType;
 @Setter
 @Entity
 @Table(name = "wallets")
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Wallet {
 
     @Id
@@ -50,12 +54,20 @@ public class Wallet {
     @Column(name = "current_balance", nullable = false, precision = 19, scale = 2)
     private BigDecimal currentBalance;
 
+    @Column(name="target_amount", precision = 19, scale = 2)
+    private BigDecimal targetAmount;
+
+    @Column(name="target_date")
+    private LocalDate targetDate;
+
     @Column(name = "is_default", nullable = false)
-    private Boolean defaultWallet;
+    @Builder.Default
+    private Boolean defaultWallet = false;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private WalletStatus status;
+    @Builder.Default
+    private WalletStatus status = WalletStatus.ACTIVE;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;

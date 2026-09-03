@@ -60,9 +60,11 @@ class TransactionServiceTest {
         );
         var wallet = walletService.createWallet(new CreateWalletRequest(
                 "Cash",
-                WalletType.CASH,
+                WalletType.MAIN,
                 "vnd",
-                new BigDecimal("100.00")
+                new BigDecimal("100.00"),
+                null,
+                null
         ));
         var category = categoryService.createCategory(new CreateCategoryRequest(
                 "Food",
@@ -112,5 +114,71 @@ class TransactionServiceTest {
         assertThat(walletRepository.findById(wallet.id())).get()
                 .extracting(value -> value.getCurrentBalance())
                 .isEqualTo(new BigDecimal("100.00"));
+    }
+
+    @Test
+    void deletingPostedTransferRollsBackMoneyToSourceWallet() {
+        authService.register(new RegisterRequest(
+                "transfer-user",
+                "transfer-user@example.com",
+                null,
+                "secret123",
+                null
+        ));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("transfer-user", null)
+        );
+        var mainWallet = walletService.createWallet(new CreateWalletRequest(
+                "Main",
+                WalletType.MAIN,
+                "vnd",
+                new BigDecimal("100.00"),
+                null,
+                null
+        ));
+        var goalWallet = walletService.createWallet(new CreateWalletRequest(
+                "Goal",
+                WalletType.GOAL,
+                "vnd",
+                BigDecimal.ZERO,
+                new BigDecimal("500.00"),
+                LocalDate.now().plusMonths(6)
+        ));
+        var category = categoryService.createCategory(new CreateCategoryRequest(
+                "Goal transfer",
+                CategoryType.EXPENSE,
+                null,
+                null
+        ));
+
+        var transfer = transactionService.createTransaction(new CreateTransactionRequest(
+                mainWallet.id(),
+                category.id(),
+                goalWallet.id(),
+                TransactionType.TRANSFER,
+                new BigDecimal("30.00"),
+                "vnd",
+                LocalDate.now(),
+                "Move to goal",
+                null,
+                PaymentMethod.BANK_TRANSFER,
+                TransactionStatus.POSTED
+        ));
+
+        assertThat(walletRepository.findById(mainWallet.id())).get()
+                .extracting(value -> value.getCurrentBalance())
+                .isEqualTo(new BigDecimal("70.00"));
+        assertThat(walletRepository.findById(goalWallet.id())).get()
+                .extracting(value -> value.getCurrentBalance())
+                .isEqualTo(new BigDecimal("30.00"));
+
+        transactionService.deleteTransaction(transfer.id());
+
+        assertThat(walletRepository.findById(mainWallet.id())).get()
+                .extracting(value -> value.getCurrentBalance())
+                .isEqualTo(new BigDecimal("100.00"));
+        assertThat(walletRepository.findById(goalWallet.id())).get()
+                .extracting(value -> value.getCurrentBalance())
+                .matches(value -> value.compareTo(BigDecimal.ZERO) == 0);
     }
 }

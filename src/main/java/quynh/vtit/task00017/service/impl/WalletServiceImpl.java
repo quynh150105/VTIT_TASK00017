@@ -1,5 +1,6 @@
 package quynh.vtit.task00017.service.impl;
 
+import java.math.BigDecimal;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -46,10 +47,17 @@ public class WalletServiceImpl implements WalletService {
         Wallet wallet = walletMapper.toWallet(request);
         wallet.setName(name);
         wallet.setCurrencyCode(request.currencyCode().trim().toUpperCase());
-        wallet.setCurrentBalance(request.openingBalance());
-        wallet.setDefaultWallet(false);
-        wallet.setStatus(WalletStatus.ACTIVE);
         wallet.setUser(user);
+        wallet.setWalletType(request.walletType());
+
+        BigDecimal openingBalance = request.openingBalance() == null
+                ? BigDecimal.ZERO
+                : request.openingBalance();
+
+        wallet.setCurrentBalance(openingBalance);
+        wallet.setOpeningBalance(openingBalance);
+
+
         walletRepository.save(wallet);
         return walletMapper.toWalletResponse(wallet);
     }
@@ -76,6 +84,9 @@ public class WalletServiceImpl implements WalletService {
     @Transactional
     public void deleteWallet(Long id) {
         Wallet wallet = findWallet(id, currentUser().getId());
+        if (wallet.getCurrentBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Wallet.ERR_WALLET_HAS_BALANCE);
+        }
         wallet.setStatus(WalletStatus.ARCHIVED);
         walletRepository.save(wallet);
     }

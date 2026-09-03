@@ -1,6 +1,7 @@
 package quynh.vtit.task00017.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import org.junit.jupiter.api.AfterEach;
@@ -14,6 +15,7 @@ import quynh.vtit.task00017.base.enums.WalletType;
 import quynh.vtit.task00017.domain.dto.request.CreateWalletRequest;
 import quynh.vtit.task00017.domain.dto.request.RegisterRequest;
 import quynh.vtit.task00017.domain.dto.request.UpdateWalletRequest;
+import quynh.vtit.task00017.exception.BusinessException;
 import quynh.vtit.task00017.repository.WalletRepository;
 import quynh.vtit.task00017.service.impl.AuthServiceImpl;
 
@@ -49,15 +51,17 @@ class WalletServiceTest {
 
         var created = walletService.createWallet(new CreateWalletRequest(
                 "  Cash  ",
-                WalletType.CASH,
+                WalletType.MAIN,
                 "vnd",
-                new BigDecimal("100000.00")
+                new BigDecimal("100000.00"),
+                null,
+                null
         ));
         var updated = walletService.updateWallet(created.id(), new UpdateWalletRequest(
                 "Bank",
-                WalletType.BANK,
+                WalletType.SPENDING,
                 "usd",
-                new BigDecimal("200.00")
+                BigDecimal.ZERO
         ));
 
         assertThat(created.name()).isEqualTo("Cash");
@@ -74,5 +78,34 @@ class WalletServiceTest {
         assertThat(walletRepository.findById(created.id())).get()
                 .extracting(wallet -> wallet.getStatus())
                 .isEqualTo(WalletStatus.ARCHIVED);
+    }
+
+    @Test
+    void deleteWalletWithBalanceIsRejected() {
+        authService.register(new RegisterRequest(
+                "wallet-balance-user",
+                "wallet-balance-user@example.com",
+                null,
+                "secret123",
+                null
+        ));
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("wallet-balance-user", null)
+        );
+        var wallet = walletService.createWallet(new CreateWalletRequest(
+                "Goal",
+                WalletType.GOAL,
+                "vnd",
+                new BigDecimal("100.00"),
+                null,
+                null
+        ));
+
+        assertThatThrownBy(() -> walletService.deleteWallet(wallet.id()))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage("exception.wallet.has.balance");
+        assertThat(walletRepository.findById(wallet.id())).get()
+                .extracting(value -> value.getStatus())
+                .isEqualTo(WalletStatus.ACTIVE);
     }
 }

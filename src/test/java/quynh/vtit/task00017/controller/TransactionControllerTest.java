@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.io.ByteArrayInputStream;
+import java.math.BigDecimal;
+import java.util.List;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,6 +108,53 @@ class TransactionControllerTest {
     }
 
     @Test
+    void transferFromMainToGoalUpdatesGoalCurrentBalance() throws Exception {
+        authService.register(new RegisterRequest(
+                "transaction-transfer-api-user",
+                "transaction-transfer-api-user@example.com",
+                null,
+                "secret123",
+                null
+        ));
+        String token = authService.login(new LoginRequest("transaction-transfer-api-user", "secret123")).accessToken();
+        String mainWalletId = createWallet(token);
+        String goalWalletId = createGoalWallet(token);
+        String categoryId = createCategory(token);
+
+        mockMvc.perform(post("/api/v1/transactions/creation")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "walletId": %s,
+                                  "categoryId": %s,
+                                  "transferWalletId": %s,
+                                  "transactionType": "TRANSFER",
+                                  "amount": 30000,
+                                  "currencyCode": "vnd",
+                                  "transactionDate": "2026-08-21",
+                                  "title": "Move to goal",
+                                  "paymentMethod": "BANK_TRANSFER",
+                                  "status": "POSTED"
+                                }
+                                """.formatted(mainWalletId, categoryId, goalWalletId)))
+                .andExpect(status().isOk());
+
+        String walletsResponse = mockMvc.perform(get("/api/v1/wallets/all")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        List<Number> goalBalances = com.jayway.jsonpath.JsonPath.read(
+                walletsResponse,
+                "$.data[?(@.id == %s)].currentBalance".formatted(goalWalletId)
+        );
+
+        assertThat(new BigDecimal(goalBalances.get(0).toString())).isEqualByComparingTo("30000");
+    }
+
+    @Test
     void adminCanExportTransactions() throws Exception {
         String userToken = registerAndLogin("transaction-owner-user", "transaction-owner-user@example.com", UserRole.USER);
         String walletId = createWallet(userToken);
@@ -142,10 +191,6 @@ class TransactionControllerTest {
                     assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Admin visible lunch")
             );
         }
-
-        mockMvc.perform(get("/api/v1/transactions/export")
-                        .header("Authorization", "Bearer " + adminToken))
-                .andExpect(status().isOk());
     }
 
     private String registerAndLogin(String username, String email, UserRole role) {
@@ -188,9 +233,28 @@ class TransactionControllerTest {
                         .content("""
                                 {
                                   "name": "Cash",
-                                  "walletType": "CASH",
+                                  "walletType": "MAIN",
                                   "currencyCode": "vnd",
                                   "openingBalance": 100000
+                                }
+                                """))
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+        return com.jayway.jsonpath.JsonPath.read(response, "$.data.id").toString();
+    }
+
+    private String createGoalWallet(String token) throws Exception {
+        String response = mockMvc.perform(post("/api/v1/wallets/creation")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "name": "Goal",
+                                  "walletType": "GOAL",
+                                  "currencyCode": "vnd",
+                                  "openingBalance": 0,
+                                  "targetAmount": 100000
                                 }
                                 """))
                 .andReturn()
