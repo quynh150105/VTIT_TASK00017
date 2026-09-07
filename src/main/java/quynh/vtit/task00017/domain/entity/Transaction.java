@@ -9,7 +9,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
-import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
@@ -65,7 +64,7 @@ public class Transaction {
     @Column(nullable = false, length = 150)
     private String title;
 
-    @Lob
+    @Column(columnDefinition = "text")
     private String note;
 
     @Enumerated(EnumType.STRING)

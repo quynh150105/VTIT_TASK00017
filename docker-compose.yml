@@ -1,0 +1,48 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: task00017-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: task00017
+      MYSQL_USER: task00017
+      MYSQL_PASSWORD: task00017
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-proot" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  mailhog:
+    image: mailhog/mailhog:v1.0.1
+    container_name: task00017-mailhog
+    ports:
+      - "8025:8025"
+
+  app:
+    build: .
+    container_name: task00017-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/task00017?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Ho_Chi_Minh
+      DB_USERNAME: task00017
+      DB_PASSWORD: task00017
+      JWT_SECRET: task00017-secret-key-task00017-secret-key
+      JWT_EXPIRATION_MINUTES: 60
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USERNAME: ""
+      MAIL_PASSWORD: ""
+      MAIL_SMTP_AUTH: false
+      MAIL_SMTP_STARTTLS_ENABLE: false
+    ports:
+      - "8080:8080"
+
+volumes:
+  mysql-data:

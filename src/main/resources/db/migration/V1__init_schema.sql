@@ -38,6 +38,8 @@ create table wallets (
     currency_code varchar(3) not null,
     opening_balance decimal(19,2) not null,
     current_balance decimal(19,2) not null,
+    target_amount decimal(19,2),
+    target_date date,
     is_default boolean not null,
     status varchar(20) not null,
     created_at datetime not null,
