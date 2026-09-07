@@ -193,6 +193,38 @@ class TransactionControllerTest {
         }
     }
 
+    @Test
+    void userCanExportFilteredReconciliationReport() throws Exception {
+        String token = registerAndLogin("reconciliation-user", "reconciliation-user@example.com", UserRole.USER);
+        String walletId = createWallet(token);
+        String categoryId = createCategory(token);
+        createTransaction(token, walletId, categoryId, "Matched lunch", "2026-09-02", "POSTED");
+        createTransaction(token, walletId, categoryId, "Pending lunch", "2026-09-02", "PENDING");
+
+        byte[] exportBytes = mockMvc.perform(get("/api/v1/export/reconciliation/transactions")
+                        .header("Authorization", "Bearer " + token)
+                        .param("walletId", walletId)
+                        .param("status", "POSTED")
+                        .param("fromDate", "2026-09-01")
+                        .param("toDate", "2026-09-30"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .andExpect(result -> assertThat(result.getResponse().getHeader(HttpHeaders.CONTENT_DISPOSITION))
+                        .matches("attachment; filename=\"reconciliation-report-\\d{8}-\\d{6}\\.xlsx\""))
+                .andReturn()
+                .getResponse()
+                .getContentAsByteArray();
+
+        try (XSSFWorkbook workbook = new XSSFWorkbook(new ByteArrayInputStream(exportBytes))) {
+            assertThat(workbook.getSheetAt(0)).anySatisfy(row ->
+                    assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Matched lunch")
+            );
+            assertThat(workbook.getSheetAt(0)).noneSatisfy(row ->
+                    assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Pending lunch")
+            );
+        }
+    }
+
     private String registerAndLogin(String username, String email, UserRole role) {
         authService.register(new RegisterRequest(username, email, null, "secret123", null));
         userRepository.findByUsername(username).ifPresent(user -> {
@@ -203,6 +235,10 @@ class TransactionControllerTest {
     }
 
     private String createTransaction(String token, String walletId, String categoryId, String title) throws Exception {
+        return createTransaction(token, walletId, categoryId, title, "2026-08-21", "POSTED");
+    }
+
+    private String createTransaction(String token, String walletId, String categoryId, String title, String transactionDate, String transactionStatus) throws Exception {
         String response = mockMvc.perform(post("/api/v1/transactions/creation")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -213,12 +249,12 @@ class TransactionControllerTest {
                                   "transactionType": "EXPENSE",
                                   "amount": 30000,
                                   "currencyCode": "vnd",
-                                  "transactionDate": "2026-08-21",
+                                  "transactionDate": "%s",
                                   "title": "%s",
                                   "paymentMethod": "CASH",
-                                  "status": "POSTED"
+                                  "status": "%s"
                                 }
-                                """.formatted(walletId, categoryId, title)))
+                                """.formatted(walletId, categoryId, transactionDate, title, transactionStatus)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

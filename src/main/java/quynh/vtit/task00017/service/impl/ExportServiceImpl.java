@@ -2,6 +2,7 @@ package quynh.vtit.task00017.service.impl;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -27,6 +28,8 @@ import quynh.vtit.task00017.service.ExportService;
 @RequiredArgsConstructor
 public class ExportServiceImpl implements ExportService {
 
+    private static final String RECONCILIATION_TEMPLATE = "/templates/reconciliation-report-template.xlsx";
+
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
 
@@ -42,24 +45,16 @@ public class ExportServiceImpl implements ExportService {
                 user.getRole() == UserRole.ADMIN ? null : user.getId(), walletId, type, status, fromDate, toDate
         );
 
-        try(Workbook workbook = new XSSFWorkbook();
-            ByteArrayOutputStream out = new ByteArrayOutputStream()
-        ) {
-            Sheet sheetData = workbook.createSheet("Report Transactions");
+        InputStream template = getClass().getResourceAsStream(RECONCILIATION_TEMPLATE);
+        if (template == null) {
+            throw new IllegalStateException("Missing export template: " + RECONCILIATION_TEMPLATE);
+        }
 
-            Row headerRow = sheetData.createRow(0);
+        try(template;
+            Workbook workbook = new XSSFWorkbook(template);
+            ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Sheet sheetData = workbook.getSheetAt(0);
             String[] columns = {"id", "userName", "walletName", "categoryName", "transferWalletName", "transactionType", "amount", "currencyCode", "transactionDate", "title", "status"};
-
-            CellStyle headerStyle = workbook.createCellStyle();
-            Font headerFont = workbook.createFont();
-            headerFont.setBold(true);
-            headerStyle.setFont(headerFont);
-            // tao header
-            for(int i = 0; i< columns.length; i++){
-                Cell cell = headerRow.createCell(i);
-                cell.setCellValue(columns[i]);
-                cell.setCellStyle(headerStyle);
-            }
 
             int rowIndex = 1;
             for(Transaction data : listData){

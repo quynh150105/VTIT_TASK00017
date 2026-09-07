@@ -33,7 +33,29 @@ public class ExportExcelController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
     ) {
-        String filename = "transaction-report-" + LocalDateTime.now().format(EXPORT_TIMESTAMP_FORMAT) + ".xlsx";
+        return exportTransactions("transaction-report", walletId, type, status, fromDate, toDate);
+    }
+
+    @GetMapping(UrlConstant.Export.RECONCILIATION_TRANSACTION)
+    public ResponseEntity<byte[]> exportReconciliationReport(
+            @RequestParam(required = false) Long walletId,
+            @RequestParam(required = false) TransactionType type,
+            @RequestParam(required = false) TransactionStatus status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        return exportTransactions("reconciliation-report", walletId, type, status, fromDate, toDate);
+    }
+
+    private ResponseEntity<byte[]> exportTransactions(
+            String filenamePrefix,
+            Long walletId,
+            TransactionType type,
+            TransactionStatus status,
+            LocalDate fromDate,
+            LocalDate toDate
+    ) {
+        String filename = filenamePrefix + "-" + LocalDateTime.now().format(EXPORT_TIMESTAMP_FORMAT) + ".xlsx";
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + filename + "\"")
                 .contentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))

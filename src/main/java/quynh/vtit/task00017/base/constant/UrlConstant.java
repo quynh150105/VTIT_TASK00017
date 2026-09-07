@@ -61,6 +61,7 @@ public class UrlConstant {
     public static class Export {
         private static final String PRE_FIX = "/export";
         public static final String TRANSACTION = PRE_FIX + "/transactions";
+        public static final String RECONCILIATION_TRANSACTION = PRE_FIX + "/reconciliation/transactions";
         public static final String GET_DETAIL = PRE_FIX + "/{id}";
         public static final String CREATE = PRE_FIX + "/creation";
         public static final String UPDATE = PRE_FIX + "/{id}";
