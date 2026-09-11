@@ -1,6 +1,7 @@
 package quynh.vtit.task00017.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -10,9 +11,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
+import quynh.vtit.task00017.base.constant.ErrorMessage;
 import quynh.vtit.task00017.base.enums.CategoryType;
 import quynh.vtit.task00017.base.enums.PaymentMethod;
-import quynh.vtit.task00017.base.enums.TransactionStatus;
 import quynh.vtit.task00017.base.enums.TransactionType;
 import quynh.vtit.task00017.base.enums.WalletType;
 import quynh.vtit.task00017.domain.dto.request.CreateCategoryRequest;
@@ -20,6 +21,7 @@ import quynh.vtit.task00017.domain.dto.request.CreateTransactionRequest;
 import quynh.vtit.task00017.domain.dto.request.CreateWalletRequest;
 import quynh.vtit.task00017.domain.dto.request.RegisterRequest;
 import quynh.vtit.task00017.domain.dto.request.UpdateTransactionRequest;
+import quynh.vtit.task00017.exception.BusinessException;
 import quynh.vtit.task00017.repository.WalletRepository;
 import quynh.vtit.task00017.service.impl.AuthServiceImpl;
 
@@ -83,8 +85,7 @@ class TransactionServiceTest {
                 LocalDate.now(),
                 "Lunch",
                 null,
-                PaymentMethod.CASH,
-                TransactionStatus.POSTED
+                PaymentMethod.CASH
         ));
 
         assertThat(walletRepository.findById(wallet.id())).get()
@@ -101,8 +102,7 @@ class TransactionServiceTest {
                 LocalDate.now(),
                 "Snack",
                 null,
-                PaymentMethod.CASH,
-                TransactionStatus.POSTED
+                PaymentMethod.CASH
         ));
 
         assertThat(walletRepository.findById(wallet.id())).get()
@@ -114,6 +114,21 @@ class TransactionServiceTest {
         assertThat(walletRepository.findById(wallet.id())).get()
                 .extracting(value -> value.getCurrentBalance())
                 .isEqualTo(new BigDecimal("100.00"));
+
+        assertThatThrownBy(() -> transactionService.updateTransaction(created.id(), new UpdateTransactionRequest(
+                wallet.id(),
+                category.id(),
+                null,
+                TransactionType.EXPENSE,
+                new BigDecimal("10.00"),
+                "vnd",
+                LocalDate.now(),
+                "Revive",
+                null,
+                PaymentMethod.CASH
+        )))
+                .isInstanceOf(BusinessException.class)
+                .hasMessage(ErrorMessage.Transaction.ERR_TRANSACTION_CANCELLED);
     }
 
     @Test
@@ -161,8 +176,7 @@ class TransactionServiceTest {
                 LocalDate.now(),
                 "Move to goal",
                 null,
-                PaymentMethod.BANK_TRANSFER,
-                TransactionStatus.POSTED
+                PaymentMethod.BANK_TRANSFER
         ));
 
         assertThat(walletRepository.findById(mainWallet.id())).get()

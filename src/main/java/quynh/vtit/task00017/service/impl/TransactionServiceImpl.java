@@ -73,6 +73,7 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setUser(user);
         transaction.setTitle(request.title().trim());
         transaction.setCurrencyCode(currencyCode);
+        transaction.setStatus(TransactionStatus.POSTED);
         applyBalance(transaction, false);
         transactionRepository.save(transaction);
         return transactionMapper.toResponse(transaction);
@@ -83,12 +84,20 @@ public class TransactionServiceImpl implements TransactionService {
     public TransactionResponse updateTransaction(Long id, UpdateTransactionRequest request) {
         User user = currentUser();
         Transaction transaction = findTransaction(id, user.getId());
+        if(transaction.getStatus() == TransactionStatus.CANCELLED) {
+            throw new BusinessException(
+                    HttpStatus.BAD_REQUEST,
+                    ErrorMessage.Transaction.ERR_TRANSACTION_CANCELLED
+            );
+        }
+        lockTransactionWallets(transaction, user.getId());
         applyBalance(transaction, true);
         transactionMapper.update(request, transaction);
         String currencyCode = request.currencyCode().trim().toUpperCase();
         fillTransaction(transaction, user.getId(), request.walletId(), request.categoryId(), request.transferWalletId(), currencyCode);
         transaction.setTitle(request.title().trim());
         transaction.setCurrencyCode(currencyCode);
+        transaction.setStatus(TransactionStatus.POSTED);
         applyBalance(transaction, false);
         transactionRepository.save(transaction);
         return transactionMapper.toResponse(transaction);
@@ -97,7 +106,9 @@ public class TransactionServiceImpl implements TransactionService {
     @Override
     @Transactional
     public void deleteTransaction(Long id) {
-        Transaction transaction = findTransaction(id, currentUser().getId());
+        User user = currentUser();
+        Transaction transaction = findTransaction(id, user.getId());
+        lockTransactionWallets(transaction, user.getId());
         applyBalance(transaction, true);
         transaction.setStatus(TransactionStatus.CANCELLED);
         transactionRepository.save(transaction);
@@ -111,11 +122,8 @@ public class TransactionServiceImpl implements TransactionService {
             Long transferWalletId,
             String currencyCode
     ) {
-        Wallet wallet = findWallet(walletId, userId);
+        Wallet wallet;
         Category category = findCategory(categoryId, userId);
-        if (!wallet.getCurrencyCode().equalsIgnoreCase(currencyCode)) {
-            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Transaction.ERR_TRANSACTION_CURRENCY_MISMATCH);
-        }
         Wallet transferWallet = null;
         if (transaction.getTransactionType() == TransactionType.TRANSFER) {
             if (transferWalletId == null) {
@@ -124,7 +132,20 @@ public class TransactionServiceImpl implements TransactionService {
             if (walletId.equals(transferWalletId)) {
                 throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Transaction.ERR_TRANSFER_WALLET_SAME);
             }
-            transferWallet = findWallet(transferWalletId, userId);
+            if (walletId.compareTo(transferWalletId) < 0) {
+                wallet = findWalletForUpdate(walletId, userId);
+                transferWallet = findWalletForUpdate(transferWalletId, userId);
+            } else {
+                transferWallet = findWalletForUpdate(transferWalletId, userId);
+                wallet = findWalletForUpdate(walletId, userId);
+            }
+        } else {
+            wallet = findWalletForUpdate(walletId, userId);
+        }
+        if (!wallet.getCurrencyCode().equalsIgnoreCase(currencyCode)) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Transaction.ERR_TRANSACTION_CURRENCY_MISMATCH);
+        }
+        if (transaction.getTransactionType() == TransactionType.TRANSFER) {
             if (!wallet.getCurrencyCode().equalsIgnoreCase(transferWallet.getCurrencyCode())) {
                 throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Transaction.ERR_TRANSFER_CURRENCY_MISMATCH);
             }
@@ -132,6 +153,22 @@ public class TransactionServiceImpl implements TransactionService {
         transaction.setWallet(wallet);
         transaction.setCategory(category);
         transaction.setTransferWallet(transferWallet);
+    }
+
+    private void lockTransactionWallets(Transaction transaction, Long userId) {
+        Wallet wallet = transaction.getWallet();
+        Wallet transferWallet = transaction.getTransferWallet();
+        if (transaction.getTransactionType() == TransactionType.TRANSFER && transferWallet != null) {
+            if (wallet.getId().compareTo(transferWallet.getId()) < 0) {
+                transaction.setWallet(findWalletForUpdate(wallet.getId(), userId));
+                transaction.setTransferWallet(findWalletForUpdate(transferWallet.getId(), userId));
+            } else {
+                transaction.setTransferWallet(findWalletForUpdate(transferWallet.getId(), userId));
+                transaction.setWallet(findWalletForUpdate(wallet.getId(), userId));
+            }
+            return;
+        }
+        transaction.setWallet(findWalletForUpdate(wallet.getId(), userId));
     }
 
     private void applyBalance(Transaction transaction, boolean reverse) {
@@ -171,11 +208,6 @@ public class TransactionServiceImpl implements TransactionService {
         return user.getRole() == UserRole.ADMIN ? null : user.getId();
     }
 
-    private Wallet findWallet(Long id, Long userId) {
-        return walletRepository.findByIdAndUserIdAndStatus(id, userId, WalletStatus.ACTIVE)
-                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.Wallet.ERR_WALLET_NOT_FOUND));
-    }
-
     private Category findCategory(Long id, Long userId) {
         return categoryRepository.findAvailableById(id, userId)
                 .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.Category.ERR_CATEGORY_NOT_FOUND));
@@ -185,5 +217,10 @@ public class TransactionServiceImpl implements TransactionService {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new BusinessException(HttpStatus.UNAUTHORIZED, ErrorMessage.UNAUTHORIZED));
+    }
+
+    private Wallet findWalletForUpdate(Long id, Long userId){
+        return walletRepository.findByIdAndUserIdAndStatusForUpdate(id, userId, WalletStatus.ACTIVE)
+                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.Wallet.ERR_WALLET_NOT_FOUND));
     }
 }

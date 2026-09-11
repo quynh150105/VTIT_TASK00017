@@ -69,8 +69,7 @@ class TransactionControllerTest {
                                   "currencyCode": "vnd",
                                   "transactionDate": "2026-08-21",
                                   "title": "Lunch",
-                                  "paymentMethod": "CASH",
-                                  "status": "POSTED"
+                                  "paymentMethod": "CASH"
                                 }
                                 """.formatted(walletId, categoryId)))
                 .andExpect(status().isOk())
@@ -134,8 +133,7 @@ class TransactionControllerTest {
                                   "currencyCode": "vnd",
                                   "transactionDate": "2026-08-21",
                                   "title": "Move to goal",
-                                  "paymentMethod": "BANK_TRANSFER",
-                                  "status": "POSTED"
+                                  "paymentMethod": "BANK_TRANSFER"
                                 }
                                 """.formatted(mainWalletId, categoryId, goalWalletId)))
                 .andExpect(status().isOk());
@@ -198,8 +196,8 @@ class TransactionControllerTest {
         String token = registerAndLogin("reconciliation-user", "reconciliation-user@example.com", UserRole.USER);
         String walletId = createWallet(token);
         String categoryId = createCategory(token);
-        createTransaction(token, walletId, categoryId, "Matched lunch", "2026-09-02", "POSTED");
-        createTransaction(token, walletId, categoryId, "Pending lunch", "2026-09-02", "PENDING");
+        createTransaction(token, walletId, categoryId, "Matched lunch", "2026-09-02");
+        createTransaction(token, walletId, categoryId, "Other lunch", "2026-10-02");
 
         byte[] exportBytes = mockMvc.perform(get("/api/v1/export/reconciliation/transactions")
                         .header("Authorization", "Bearer " + token)
@@ -220,7 +218,7 @@ class TransactionControllerTest {
                     assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Matched lunch")
             );
             assertThat(workbook.getSheetAt(0)).noneSatisfy(row ->
-                    assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Pending lunch")
+                    assertThat(row.getCell(9).getStringCellValue()).isEqualTo("Other lunch")
             );
         }
     }
@@ -235,10 +233,10 @@ class TransactionControllerTest {
     }
 
     private String createTransaction(String token, String walletId, String categoryId, String title) throws Exception {
-        return createTransaction(token, walletId, categoryId, title, "2026-08-21", "POSTED");
+        return createTransaction(token, walletId, categoryId, title, "2026-08-21");
     }
 
-    private String createTransaction(String token, String walletId, String categoryId, String title, String transactionDate, String transactionStatus) throws Exception {
+    private String createTransaction(String token, String walletId, String categoryId, String title, String transactionDate) throws Exception {
         String response = mockMvc.perform(post("/api/v1/transactions/creation")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -251,10 +249,9 @@ class TransactionControllerTest {
                                   "currencyCode": "vnd",
                                   "transactionDate": "%s",
                                   "title": "%s",
-                                  "paymentMethod": "CASH",
-                                  "status": "%s"
+                                  "paymentMethod": "CASH"
                                 }
-                                """.formatted(walletId, categoryId, transactionDate, title, transactionStatus)))
+                                """.formatted(walletId, categoryId, transactionDate, title)))
                 .andExpect(status().isOk())
                 .andReturn()
                 .getResponse()

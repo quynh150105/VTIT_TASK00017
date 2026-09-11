@@ -13,7 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import quynh.vtit.task00017.base.enums.CategoryType;
 import quynh.vtit.task00017.base.enums.PaymentMethod;
 import quynh.vtit.task00017.base.enums.PeriodType;
-import quynh.vtit.task00017.base.enums.TransactionStatus;
 import quynh.vtit.task00017.base.enums.TransactionType;
 import quynh.vtit.task00017.base.enums.WalletType;
 import quynh.vtit.task00017.domain.dto.request.CreateBudgetRequest;
@@ -93,8 +92,7 @@ class BudgetServiceTest {
                 LocalDate.of(2026, 8, 26),
                 "Lunch",
                 null,
-                PaymentMethod.CASH,
-                TransactionStatus.POSTED
+                PaymentMethod.CASH
         ));
 
         var budget = budgetService.getAllBudgetByUser().get(0);

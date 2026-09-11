@@ -66,8 +66,7 @@ class BudgetControllerTest {
                                   "currencyCode": "vnd",
                                   "transactionDate": "2026-08-26",
                                   "title": "Lunch",
-                                  "paymentMethod": "CASH",
-                                  "status": "POSTED"
+                                  "paymentMethod": "CASH"
                                 }
                                 """.formatted(walletId, categoryId)))
                 .andExpect(status().isOk());

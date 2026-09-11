@@ -8,7 +8,6 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import quynh.vtit.task00017.base.constant.ErrorMessage;
 import quynh.vtit.task00017.base.enums.PaymentMethod;
-import quynh.vtit.task00017.base.enums.TransactionStatus;
 import quynh.vtit.task00017.base.enums.TransactionType;
 
 public record UpdateTransactionRequest(
@@ -39,9 +38,6 @@ public record UpdateTransactionRequest(
         String note,
 
         @NotNull(message = ErrorMessage.INVALID_SOME_THING_FIELD_IS_REQUIRED)
-        PaymentMethod paymentMethod,
-
-        @NotNull(message = ErrorMessage.INVALID_SOME_THING_FIELD_IS_REQUIRED)
-        TransactionStatus status
+        PaymentMethod paymentMethod
 ) {
 }
