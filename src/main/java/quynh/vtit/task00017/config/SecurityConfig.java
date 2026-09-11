@@ -6,6 +6,7 @@ import com.nimbusds.jose.jwk.OctetSequenceKey;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
 import com.nimbusds.jose.proc.SecurityContext;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.List;
 import javax.crypto.spec.SecretKeySpec;
 import org.springframework.beans.factory.annotation.Value;
@@ -82,6 +83,11 @@ public class SecurityConfig {
             return role == null ? List.of() : List.of(new SimpleGrantedAuthority("ROLE_" + role));
         });
         return converter;
+    }
+
+    @Bean
+    public SecureRandom secureRandom(){
+        return new SecureRandom();
     }
 
     @Bean

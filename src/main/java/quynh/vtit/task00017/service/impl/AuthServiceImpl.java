@@ -1,11 +1,11 @@
 package quynh.vtit.task00017.service.impl;
 
+import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.Random;
-import java.util.UUID;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
@@ -46,6 +46,10 @@ public class AuthServiceImpl implements AuthService {
     private final BlacklistedTokenRepository blacklistedTokenRepository;
     private final SendMailService sendMailService;
     private final PasswordResetTokenRepository passwordResetTokenRepository;
+    private final SecureRandom secureRandom;
+
+    @Value("${app.jwt.expiration-minutes}")
+    private long EXP_TIME;
 
     @Transactional
     @Override
@@ -90,11 +94,13 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public PasswordResetTokenResponse forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.email())
-                .orElseThrow(() -> new BusinessException(HttpStatus.NOT_FOUND, ErrorMessage.User.ERR_USER_NOT_EXISTED));
-        int otpNumber = new Random().nextInt(900000) + 100000; // Generates a 6-digit number
-        String otp = String.valueOf(otpNumber);
+        User user = userRepository.findByEmail(request.email()).orElse(null);
+        if (user == null) {
+            return new PasswordResetTokenResponse("Da gui OTP den email neu email ton tai");
+        }
+        String otp = String.valueOf(secureRandom.nextInt(900000) + 100000);
         PasswordResetToken passwordResetToken = PasswordResetToken.builder()
                 .user(user)
                 .channel(ResetTokenChannel.EMAIL)
@@ -104,21 +110,26 @@ public class AuthServiceImpl implements AuthService {
                 .build();
         sendMailService.sendEmail(user.getEmail(),"OTP",otp);
         passwordResetTokenRepository.save(passwordResetToken);
-        return new PasswordResetTokenResponse(otp);
+        return new PasswordResetTokenResponse("Da gui OTP den email neu email ton tai");
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = BusinessException.class)
     public void resetPassword(ResetPasswordRequest request) {
         User user = userRepository.findByEmail(request.email())
                 .orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.User.ERR_USER_NOT_EXISTED));
         PasswordResetToken resetToken = passwordResetTokenRepository
-                .findByUserAndUsedAtIsNullAndExpiresAtAfter(user, LocalDateTime.now())
-                .stream()
-                .filter(token -> passwordEncoder.matches(request.otp(), token.getOptHash()))
-                .findFirst()
+                .findTopByUserAndUsedAtIsNullAndExpiresAtAfterOrderByCreatedAtDesc(user, LocalDateTime.now())
                 .orElseThrow(() -> new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Auth.ERR_INVALID_OTP));
 
+        if (resetToken.getAttemptCount() >= 5) {
+            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Auth.ERR_OTP_ATTEMPT_EXCEEDED);
+        }
+
+        if (!passwordEncoder.matches(request.otp(), resetToken.getOptHash())) {
+            resetToken.setAttemptCount(resetToken.getAttemptCount() + 1);
+            throw new BusinessException(HttpStatus.BAD_REQUEST, ErrorMessage.Auth.ERR_INVALID_OTP);
+        }
         user.setPasswordHash(passwordEncoder.encode(request.newPassword()));
         userRepository.save(user);
         resetToken.setUsedAt(LocalDateTime.now());
@@ -129,7 +140,7 @@ public class AuthServiceImpl implements AuthService {
         JwtClaimsSet claims = JwtClaimsSet.builder()
                 .subject(user.getUsername())
                 .issuedAt(now)
-                .expiresAt(now.plusSeconds(15 * 60))
+                .expiresAt(now.plusSeconds(EXP_TIME* 60))
                 .claim("role", user.getRole().name())
                 .build();
         JwsHeader header = JwsHeader.with(MacAlgorithm.HS256).build();

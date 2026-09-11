@@ -29,6 +29,7 @@ public class ErrorMessage {
         public static final String ERR_MALFORMED_TOKEN = "exception.auth.malformed.token";
         public static final String ERR_TOKEN_ALREADY_INVALIDATED = "exception.auth.token.already.invalidated";
         public static final String ERR_INVALID_OTP = "exception.auth.otp.invalid";
+        public static final String ERR_OTP_ATTEMPT_EXCEEDED = "exception.auth.otp.attempt.exceeded";
     }
 
     public static class User {
